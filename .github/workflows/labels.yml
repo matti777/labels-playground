@@ -1,8 +1,6 @@
 on:
-  issue_comment:
-    types: [created, edited]
-  pull_request_review_comment:
-    types: [created, edited]
+  pull_request:
+    types: [assigned]
 
 jobs:
   add-in-review:
@@ -11,6 +9,4 @@ jobs:
       - uses: actions/github-script@v4
         with:
           script: |
-            console.log('CONSOLE: running add-in-review')
-            console.log(`CONSOLE: context is: ${JSON.stringify(context)}`)
-            core.debug(`CORE DEBUG: context is: ${JSON.stringify(context)}`)
+            await require('.github/workflows/label_add_in_review.js')()
