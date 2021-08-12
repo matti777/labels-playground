@@ -6,7 +6,9 @@ jobs:
   add-in-review:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v2
       - uses: actions/github-script@v4
         with:
           script: |
-            await require('.github/workflows/label_add_in_review.js')()
+            const script = require('.github/workflows/label_add_in_review.js');
+            await script({github, context});
