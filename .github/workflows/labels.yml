@@ -1,0 +1,14 @@
+on:
+  pull_request_review_comment:
+    types: [created]
+
+jobs:
+  add-in-review:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v4
+        with:
+          script: |
+            console.log('CONSOLE: running add-in-review')
+            console.log(`CONSOLE: context is: ${JSON.stringify(context)}`)
+            core.debug(`CORE DEBUG: context is: ${JSON.stringify(context)}`)
