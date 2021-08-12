@@ -1,2 +1,3 @@
-# labels-playground
-Testing things.
+# Labels Playground
+
+Sandbox for testing things related to automated labeling.
