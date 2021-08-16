@@ -30,12 +30,22 @@ async function opened(github, context) {
     const addLabel = pr.draft ? LABEL_DRAFT : LABEL_READY_FOR_REVIEW;
     const removeLabel = pr.draft ? LABEL_READY_FOR_REVIEW : LABEL_DRAFT;
 
-    await github.issues.removeLabel({
+    const response = await github.issues.listLabelsOnIssue({
       issue_number: pr.number,
       owner: repo.owner.login,
       repo: repo.name,
-      name: removeLabel,
     });
+
+    const currentLabels = response.data.map((x) => x.name);
+
+    if (currentLabels.includes(removeLabel)) {
+      await github.issues.removeLabel({
+        issue_number: pr.number,
+        owner: repo.owner.login,
+        repo: repo.name,
+        name: removeLabel,
+      });
+    }
 
     await github.issues.addLabels({
       issue_number: pr.number,
