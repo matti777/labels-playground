@@ -20,8 +20,6 @@ async function setLabels(github, context, labels) {
   const pr = context.payload.pull_request;
   const repo = context.payload.repository;
 
-  console.log(`Setting labels: ${labels}`);
-
   await github.issues.setLabels({
     issue_number: pr.number,
     owner: repo.owner.login,
@@ -66,8 +64,6 @@ async function closed(github, context) {
   const pr = context.payload.pull_request;
 
   if (pr.state === "closed" && !pr.locked && pr.merged) {
-    console.log("Deleting all labels");
-
     await setLabels(github, context, []);
   }
 }
@@ -92,9 +88,6 @@ async function submitted(github, context, currentLabels) {
 }
 
 module.exports = async ({ github, context }) => {
-  console.log(`context is: ${JSON.stringify(context)}`);
-  // console.log(`action is: ${JSON.stringify(context.payload.action)}`);
-
   const currentLabels = await getCurrentLabels(github, context);
 
   switch (context.payload.action) {
