@@ -34,7 +34,7 @@ async function assigned(github, context, currentLabels) {
   const pr = context.payload.pull_request;
 
   if (
-    pr.state == "open" &&
+    pr.state === "open" &&
     !pr.locked &&
     !pr.draft &&
     !pr.merged &&
@@ -49,7 +49,7 @@ async function assigned(github, context, currentLabels) {
 async function opened(github, context, currentLabels) {
   const pr = context.payload.pull_request;
 
-  if (pr.state == "open" && !pr.locked) {
+  if (pr.state === "open" && !pr.locked) {
     const addLabel = pr.draft ? LABEL_DRAFT : LABEL_READY_FOR_REVIEW;
     const removeLabel = pr.draft ? LABEL_READY_FOR_REVIEW : LABEL_DRAFT;
 
@@ -65,17 +65,23 @@ async function opened(github, context, currentLabels) {
 async function closed(github, context) {
   const pr = context.payload.pull_request;
 
-  if (pr.state == "closed" && !pr.locked && pr.merged) {
+  if (pr.state === "closed" && !pr.locked && pr.merged) {
     console.log("Deleting all labels");
 
     await setLabels(github, context, []);
   }
 }
 
-async function closed(github, context, currentLabels) {
+async function submitted(github, context, currentLabels) {
+  const pr = context.payload.pull_request;
   const review = context.payload.review;
 
-  if (review.state === "approved") {
+  if (
+    pr.state === "closed" &&
+    !pr.locked &&
+    !pr.merged &&
+    review.state === "approved"
+  ) {
     if (!currentLabels.includes(LABEL_APPROVED)) {
       await setLabels(github, context, [...currentLabels, LABEL_APPROVED]);
     }
@@ -91,13 +97,17 @@ module.exports = async ({ github, context }) => {
   switch (context.payload.action) {
     case "assigned":
       await assigned(github, context, currentLabels);
+      break;
     case "opened":
     case "ready_for_review":
       await opened(github, context, currentLabels);
+      break;
     case "closed":
       await closed(github, context);
+      break;
     case "submitted":
       await submitted(github, context, currentLabels);
+      break;
     default:
       break;
   }
