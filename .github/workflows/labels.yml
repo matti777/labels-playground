@@ -1,9 +1,9 @@
 on:
   pull_request:
-    types: [opened, assigned]
+    types: [opened, assigned, ready_for_review]
 
 jobs:
-  add-in-review:
+  set-labels:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2

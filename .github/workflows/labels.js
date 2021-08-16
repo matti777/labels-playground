@@ -38,6 +38,22 @@ async function opened(github, context) {
   }
 }
 
+async function closed(github, context) {
+  const pr = context.payload.pull_request;
+  const repo = context.payload.repository;
+
+  if (pr.state == "closed" && !pr.locked && pr.merged) {
+    console.log("Deleting all labels");
+
+    await github.issues.addLabels({
+      issue_number: pr.number,
+      owner: repo.owner.login,
+      repo: repo.name,
+      labels: [],
+    });
+  }
+}
+
 module.exports = async ({ github, context }) => {
   console.log(`context is: ${JSON.stringify(context)}`);
   console.log(`action is: ${JSON.stringify(context.payload.action)}`);
@@ -46,7 +62,10 @@ module.exports = async ({ github, context }) => {
     case "assigned":
       await assigned(github, context);
     case "opened":
+    case "ready_for_review":
       await opened(github, context);
+    case "closed":
+      await closed(github, context);
     default:
       break;
   }
