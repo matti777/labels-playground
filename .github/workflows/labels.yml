@@ -1,6 +1,6 @@
 on:
   pull_request:
-    types: [assigned]
+    types: [opened, assigned]
 
 jobs:
   add-in-review:
@@ -10,5 +10,5 @@ jobs:
       - uses: actions/github-script@v4
         with:
           script: |
-            const script = require('.github/workflows/label_add_in_review.js');
+            const script = require('.github/workflows/labels.js');
             await script({github, context});
