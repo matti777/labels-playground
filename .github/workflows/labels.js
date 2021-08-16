@@ -1,10 +1,37 @@
 const LABEL_IN_REVIEW = "in review";
 const LABEL_READY_FOR_REVIEW = "ready for review";
 const LABEL_DRAFT = "draft";
+const LABEL_APPROVED = "approved";
 
-async function assigned(github, context) {
+async function getCurrentLabels(github, context) {
   const pr = context.payload.pull_request;
   const repo = context.payload.repository;
+
+  const response = await github.issues.listLabelsOnIssue({
+    issue_number: pr.number,
+    owner: repo.owner.login,
+    repo: repo.name,
+  });
+
+  return response.data.map((x) => x.name);
+}
+
+async function setLabels(github, context, labels) {
+  const pr = context.payload.pull_request;
+  const repo = context.payload.repository;
+
+  console.log(`Setting labels: ${labels}`);
+
+  await github.issues.setLabels({
+    issue_number: pr.number,
+    owner: repo.owner.login,
+    repo: repo.name,
+    labels: labels,
+  });
+}
+
+async function assigned(github, context, currentLabels) {
+  const pr = context.payload.pull_request;
 
   if (
     pr.state == "open" &&
@@ -13,77 +40,64 @@ async function assigned(github, context) {
     !pr.merged &&
     (pr.assignee != null || pr.assignees.length > 0)
   ) {
-    await github.issues.addLabels({
-      issue_number: pr.number,
-      owner: repo.owner.login,
-      repo: repo.name,
-      labels: [LABEL_IN_REVIEW],
-    });
+    if (!currentLabels.includes(LABEL_IN_REVIEW)) {
+      await setLabels(github, context, [...currentLabels, LABEL_IN_REVIEW]);
+    }
   }
 }
 
-async function opened(github, context) {
+async function opened(github, context, currentLabels) {
   const pr = context.payload.pull_request;
-  const repo = context.payload.repository;
 
   if (pr.state == "open" && !pr.locked) {
     const addLabel = pr.draft ? LABEL_DRAFT : LABEL_READY_FOR_REVIEW;
     const removeLabel = pr.draft ? LABEL_READY_FOR_REVIEW : LABEL_DRAFT;
 
-    const response = await github.issues.listLabelsOnIssue({
-      issue_number: pr.number,
-      owner: repo.owner.login,
-      repo: repo.name,
-    });
-
-    const currentLabels = response.data.map((x) => x.name);
-
-    if (currentLabels.includes(removeLabel)) {
-      await github.issues.removeLabel({
-        issue_number: pr.number,
-        owner: repo.owner.login,
-        repo: repo.name,
-        name: removeLabel,
-      });
+    let labels = currentLabels.filter((x) => x !== removeLabel);
+    if (!labels.includes(addLabel)) {
+      labels.push(addLabel);
     }
 
-    await github.issues.addLabels({
-      issue_number: pr.number,
-      owner: repo.owner.login,
-      repo: repo.name,
-      labels: [addLabel],
-    });
+    await setLabels(github, context, labels);
   }
 }
 
 async function closed(github, context) {
   const pr = context.payload.pull_request;
-  const repo = context.payload.repository;
 
   if (pr.state == "closed" && !pr.locked && pr.merged) {
     console.log("Deleting all labels");
 
-    await github.issues.addLabels({
-      issue_number: pr.number,
-      owner: repo.owner.login,
-      repo: repo.name,
-      labels: [],
-    });
+    await setLabels(github, context, []);
+  }
+}
+
+async function closed(github, context, currentLabels) {
+  const review = context.payload.review;
+
+  if (review.state === "approved") {
+    if (!currentLabels.includes(LABEL_APPROVED)) {
+      await setLabels(github, context, [...currentLabels, LABEL_APPROVED]);
+    }
   }
 }
 
 module.exports = async ({ github, context }) => {
   console.log(`context is: ${JSON.stringify(context)}`);
-  console.log(`action is: ${JSON.stringify(context.payload.action)}`);
+  // console.log(`action is: ${JSON.stringify(context.payload.action)}`);
+
+  const currentLabels = await getCurrentLabels(github, context);
 
   switch (context.payload.action) {
     case "assigned":
-      await assigned(github, context);
+      await assigned(github, context, currentLabels);
     case "opened":
     case "ready_for_review":
-      await opened(github, context);
+      await opened(github, context, currentLabels);
     case "closed":
       await closed(github, context);
+    case "submitted":
+      await submitted(github, context, currentLabels);
     default:
       break;
   }
