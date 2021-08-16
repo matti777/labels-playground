@@ -77,14 +77,17 @@ async function submitted(github, context, currentLabels) {
   const review = context.payload.review;
 
   if (
-    pr.state === "closed" &&
+    pr.state === "open" &&
     !pr.locked &&
     !pr.merged &&
     review.state === "approved"
   ) {
-    if (!currentLabels.includes(LABEL_APPROVED)) {
-      await setLabels(github, context, [...currentLabels, LABEL_APPROVED]);
+    let labels = currentLabels.filter((x) => x !== LABEL_READY_FOR_REVIEW);
+    if (!labels.includes(LABEL_APPROVED)) {
+      labels.push(LABEL_APPROVED);
     }
+
+    await setLabels(github, context, labels);
   }
 }
 
