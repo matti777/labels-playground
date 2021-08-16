@@ -38,9 +38,12 @@ async function assigned(github, context, currentLabels) {
     !pr.merged &&
     (pr.assignee != null || pr.assignees.length > 0)
   ) {
-    if (!currentLabels.includes(LABEL_IN_REVIEW)) {
-      await setLabels(github, context, [...currentLabels, LABEL_IN_REVIEW]);
+    let labels = currentLabels.filter((x) => x !== LABEL_READY_FOR_REVIEW);
+    if (!labels.includes(LABEL_IN_REVIEW)) {
+      labels.push(LABEL_IN_REVIEW);
     }
+
+    await setLabels(github, context, labels);
   }
 }
 
