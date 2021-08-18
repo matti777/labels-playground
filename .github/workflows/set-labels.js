@@ -38,7 +38,8 @@ async function assigned(github, context, currentLabels) {
     !pr.merged &&
     (pr.assignee != null || pr.assignees.length > 0)
   ) {
-    let labels = currentLabels.filter((x) => x !== LABEL_READY_FOR_REVIEW);
+    const removedLabels = [LABEL_READY_FOR_REVIEW];
+    let labels = currentLabels.filter((x) => !removedLabels.includes(x));
     if (!labels.includes(LABEL_IN_REVIEW)) {
       labels.push(LABEL_IN_REVIEW);
     }
@@ -51,6 +52,12 @@ async function opened(github, context, currentLabels) {
   const pr = context.payload.pull_request;
 
   if (pr.state === "open" && !pr.locked) {
+    if (pr.assignee != null || pr.assignees.length > 0) {
+      // Issue is already assigned at creation
+      console.log("Issue already assigned");
+      return await assigned(github, context, currentLabels);
+    }
+
     const addLabel = pr.draft ? LABEL_DRAFT : LABEL_READY_FOR_REVIEW;
     const removeLabel = pr.draft ? LABEL_READY_FOR_REVIEW : LABEL_DRAFT;
 
@@ -81,7 +88,8 @@ async function submitted(github, context, currentLabels) {
     !pr.merged &&
     review.state === "approved"
   ) {
-    let labels = currentLabels.filter((x) => x !== LABEL_READY_FOR_REVIEW);
+    const removedLabels = [LABEL_READY_FOR_REVIEW, LABEL_IN_REVIEW];
+    let labels = currentLabels.filter((x) => !removedLabels.includes(x));
     if (!labels.includes(LABEL_APPROVED)) {
       labels.push(LABEL_APPROVED);
     }
