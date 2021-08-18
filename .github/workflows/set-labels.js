@@ -53,8 +53,8 @@ async function opened(github, context, currentLabels) {
 
   if (pr.state === "open" && !pr.locked) {
     if (pr.assignee != null || pr.assignees.length > 0) {
-      // Issue is already assigned at creation
-      console.log("Issue already assigned");
+      // Issue is already assigned at creation; consider it "in review"
+      // even if it is a draft.
       return await assigned(github, context, currentLabels);
     }
 
@@ -101,6 +101,8 @@ async function submitted(github, context, currentLabels) {
 module.exports = async ({ github, context }) => {
   const currentLabels = await getCurrentLabels(github, context);
 
+  console.log(`Running action: ${context.payload.action}`);
+
   switch (context.payload.action) {
     case "assigned":
       await assigned(github, context, currentLabels);
@@ -116,6 +118,7 @@ module.exports = async ({ github, context }) => {
       await submitted(github, context, currentLabels);
       break;
     default:
+      console.log(`Unrecognized action: ${context.payload.action}`);
       break;
   }
 };
